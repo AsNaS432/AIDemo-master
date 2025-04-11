@@ -3,8 +3,6 @@ import os
 
 from langchain_gigachat.chat_models import GigaChat
 from langchain_gigachat import GigaChatEmbeddings
-# Removed OllamaLLM import as it is not needed for GigaChat
-
 from AI.create_data import create_data_chroma_db
 from AI.search_data import search_data_chroma_db
 from AI.mood_analyzer import check_mood
@@ -21,8 +19,12 @@ def get_giga_chat_llm():
     if "GIGACHAT_CREDENTIALS" not in os.environ:
         os.environ["GIGACHAT_CREDENTIALS"] = getpass.getpass("Введите ключ авторизации GigaChat API:NmNiYjRkYjYtM2RmYy00MDRiLTk0ZjktMjRmMmUwNWM3NjFmOmE1N2Q2ODlhLWRhNmYtNDZhZS04YWUwLTk4Nzg1MWQ2Y2VkNQ== ")
 
-    giga_chat = GigaChat(verify_ssl_certs=False)
-    return giga_chat
+    try:
+        giga_chat = GigaChat(verify_ssl_certs=False)  # Отключение проверки сертификатов для тестирования
+        return giga_chat
+    except Exception as e:
+        print(f"Error initializing GigaChat: {e}")
+        return None
 
 # создаём объекты моделей
 embeddings = GigaChatEmbeddings(verify=False)    # модель для векторизации
@@ -30,8 +32,11 @@ llm = get_giga_chat_llm()               # генеративный ИИ
 
 @app.route('/api/v1/create', methods=['POST'])
 def api_create():
+    if embeddings is None:
+        return jsonify({"error": "Embeddings initialization failed"}), 500
+
     create_data_chroma_db(embeddings,
-                          "C:\\Users\\Sasha\\Desktop\\AIDemo-master\\info.txt",
+                          "/Users/Sasha/Desktop/AIDemo/info.txt",
                           "./market_chroma_db")
     create_response = {"result": "Success!"}
 
@@ -86,4 +91,4 @@ def api_chat():
     return jsonify({'reply': response_message})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)  # Change port to 5001
+    app.run(debug=True, port=5000)
